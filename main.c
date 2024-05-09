@@ -1,75 +1,77 @@
-#include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <time.h>
+#include <stdio.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define PORT 23
-#define MAXLINE 1000
-
-typedef struct {
-    long long sequence;
-    long long timestamp;
-} DataPacket;
-
 int main() {
+    WSADATA wsa_data;
+    SOCKET socket_desc;
+    struct sockaddr_in server_addr, client_addr;
+    char server_message[2000], client_message[2000];
+    int client_struct_length = sizeof(client_addr);
 
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        printf("WSAStartup failed");
-        return 1;
+    // Initialize Winsock:
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
+        printf("WSAStartup failed: %d\n", WSAGetLastError());
+        return -1;
     }
 
-    SOCKET listener = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (listener == INVALID_SOCKET) {
-        printf("server_socket failed: %ld\n", WSAGetLastError());
+    // Create UDP socket:
+    socket_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (socket_desc == INVALID_SOCKET) {
+        printf("Error while creating socket: %d\n", WSAGetLastError());
         WSACleanup();
-        return 1;
+        return -1;
     }
+    printf("Socket created successfully\n");
 
-    struct sockaddr_in addr;
+    // Set port and IP:
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(23);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);// herhangi bir yerel IP üzerinden gelen baðlantýyý kabul eder-host to network long  
+
     
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
-
-    if (inet_pton(AF_INET,"192.168.254.21",&addr.sin_addr) < 0)
-    {
-        printf("INVALID IP\n");
-        return 1;
-    }
-   
-    if (bind(listener, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) {
-        printf("bind failed\n");
-        closesocket(listener);
+    // Bind to the set port and IP:
+    if (bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+        printf("Couldn't bind to the port: %d\n", WSAGetLastError());
         WSACleanup();
-        return 1;
+        return -1;
     }
+    printf("Done with binding\n");
 
-    char buffer[MAXLINE];
-    DataPacket packet;
-    struct sockaddr_in cliaddr;
-    int len = sizeof(cliaddr);
+    printf("Listening for incoming messages...\n\n");
 
     while (1) {
-        int bytesReceived = recvfrom(listener, (char*)&packet, sizeof(DataPacket), 0, (struct sockaddr*)&cliaddr, &len);
-        if (bytesReceived > 0) {
-            printf("Received packet: sequence=%lld, timestamp=%lld\n", packet.sequence, packet.timestamp);
+        int recv_size = recvfrom(socket_desc, client_message, sizeof(client_message), 0,
+            (struct sockaddr*)&client_addr, &client_struct_length);
+        if (recv_size == SOCKET_ERROR) {
+            printf("Couldn't receive: %d\n", WSAGetLastError());
+            WSACleanup();
+            return -1;
         }
-        else if(bytesReceived ==  0){
-            
-        }
 
-       
+        printf("Received message from IP: %s and client port: %i\n",
+            inet_ntop(AF_INET, &client_addr.sin_addr, server_message, sizeof(server_message)), ntohs(client_addr.sin_port));
 
+        printf("Msg from client: %.*s\n", recv_size, client_message);//client message'ýn okunan byte kadarýný yazdýr 
 
-        // Send response back to client
-        char* message = "Hello Client";
-        sendto(listener, message, strlen(message), 0, (struct sockaddr*)&cliaddr, len);
-        
+        //// Respond to client:
+        //strcpy_s(server_message, sizeof(server_message) +1 , client_message);
+
+        //if (sendto(socket_desc, server_message, strlen(server_message), 0,
+        //    (struct sockaddr*)&client_addr, 2000) == SOCKET_ERROR) {
+        //    printf("Can't send: %d\n", WSAGetLastError());
+        //    WSACleanup();
+        //    return -1;
+        //}
     }
 
-    closesocket(listener);
+    // Close the socket:
+    closesocket(socket_desc);
+
     WSACleanup();
+
     return 0;
 }
