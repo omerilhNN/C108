@@ -4,12 +4,15 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+#define MAX_CLIENT 5 
+
 int main() {
     WSADATA wsa_data;
     SOCKET socket_desc;
     struct sockaddr_in server_addr, client_addr;
     char server_message[2000], client_message[2000];
     int client_struct_length = sizeof(client_addr);
+    struct hostent hostp;
 
     // Initialize Winsock:
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
@@ -19,7 +22,6 @@ int main() {
 
     // Create UDP socket:
     socket_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
     if (socket_desc == INVALID_SOCKET) {
         printf("Error while creating socket: %d\n", WSAGetLastError());
         WSACleanup();
@@ -46,26 +48,34 @@ int main() {
     while (1) {
         int recv_size = recvfrom(socket_desc, client_message, sizeof(client_message), 0,
             (struct sockaddr*)&client_addr, &client_struct_length);
+
+
         if (recv_size == SOCKET_ERROR) {
             printf("Couldn't receive: %d\n", WSAGetLastError());
             WSACleanup();
             return -1;
         }
-
-        printf("Received message from IP: %s and client port: %i\n",
+  
+        if (recv_size > 2000) {
+            printf("recv Buffer overflow \n");
+            recv_size = 2000;
+            
+        }
+     
+        printf("Received a message from IP: %s and client port: %i\n",
             inet_ntop(AF_INET, &client_addr.sin_addr, server_message, sizeof(server_message)), ntohs(client_addr.sin_port));
+        
 
         printf("Msg from client: %.*s\n", recv_size, client_message);//client message'ýn okunan byte kadarýný yazdýr 
 
-        //// Respond to client:
-        //strcpy_s(server_message, sizeof(server_message) +1 , client_message);
+        printf("Server response sent to client\n");
 
-        //if (sendto(socket_desc, server_message, strlen(server_message), 0,
-        //    (struct sockaddr*)&client_addr, 2000) == SOCKET_ERROR) {
-        //    printf("Can't send: %d\n", WSAGetLastError());
-        //    WSACleanup();
-        //    return -1;
-        //}
+        if (sendto(socket_desc, server_message, sizeof(server_message), 0,
+            (struct sockaddr*)&client_addr, client_struct_length) == SOCKET_ERROR) {
+            printf("Can't send: %d\n", WSAGetLastError());
+            WSACleanup();
+            return -1;
+        }
     }
 
     // Close the socket:
