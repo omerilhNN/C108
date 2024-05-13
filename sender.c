@@ -10,19 +10,15 @@
 
 int main() {
     WSADATA wsa_data;
-    int iResult = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-    if (iResult != 0) {
-        printf("[ERROR] WSAStartup failed: %d\n", iResult);
+    int wsa = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    if (wsa != 0) {
+        printf("[ERROR] WSAStartup failed: %d\n", wsa);
         return 1;
     }
-    char* ip = "192.168.254.16";
-
     SOCKET server_sockfd;
     struct sockaddr_in server_addr;
     char* filename = "test.txt";
-    FILE* fp = fopen(filename, "r");
 
-    // Creating a UDP socket
     server_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (server_sockfd == INVALID_SOCKET) {
         printf("[ERROR] socket error: %d\n", WSAGetLastError());
@@ -33,14 +29,15 @@ int main() {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
 
-    if (inet_pton(AF_INET, ip, &server_addr.sin_addr) < 0)
+    if (inet_pton(AF_INET, "192.168.254.16", &server_addr.sin_addr) < 0)
     {
         printf("Invalid IP\n");
         closesocket(server_sockfd);
         return 1;
     }
 
-    // Reading the text file
+    // Text'i okuma modunda aç 
+    FILE* fp = fopen(filename, "r");
     if (fp == NULL) {
         printf("[ERROR] reading the file: %d\n", GetLastError());
         closesocket(server_sockfd);
@@ -50,12 +47,10 @@ int main() {
 
     char buffer[SIZE];
     int bytes_sent;
-    while (1) {
-        bytes_sent = fgets(buffer, SIZE, fp);
-        if (bytes_sent <= 0) break; // okunacak data kalmamýþsa break
+    while (bytes_sent = fgets(buffer, SIZE, fp) > 0 ) {
+        printf("Sending Data: %s", buffer);
 
-        printf("[SENDING] Data: %s", buffer);
-
+        //server_socketi aracýlýðýyla - server addresine buffer'ý gönder
         bytes_sent = sendto(server_sockfd, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
         if (bytes_sent == SOCKET_ERROR) {
             printf("[ERROR] sending data to the server: %d\n", WSAGetLastError());
@@ -64,14 +59,13 @@ int main() {
             WSACleanup();
             return 1;
         }
+
+        //her buffer'da SIZE kadar elemaný sýfýrla
         memset(buffer, 0, SIZE);
     }
 
-    
-    strcpy_s(buffer, sizeof("END"), "END");
-
-    printf("\n[SUCCESS] Data transfer complete.\n");
-    printf("[CLOSING] Disconnecting from the server.\n");
+    printf("\nData transfer completed.\n");
+    printf("Disconnecting from the server.\n");
 
     fclose(fp);
     closesocket(server_sockfd);

@@ -6,7 +6,9 @@
 
 #define MAX_CLIENT 5 
 
-void udpserver() {
+
+
+int main() {
     WSADATA wsa_data;
     SOCKET socket_desc;
     struct sockaddr_in server_addr, client_addr;
@@ -19,7 +21,6 @@ void udpserver() {
         return -1;
     }
 
-    // Create UDP socket:
     socket_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_desc == INVALID_SOCKET) {
         printf("Error while creating socket: %d\n", WSAGetLastError());
@@ -62,13 +63,13 @@ void udpserver() {
         
         printf("Msg from client: %.*s\n", recv_size, client_message);//client message'ýn okunan byte kadarýný yazdýr 
 
-     /*   if (sendto(socket_desc, server_message, sizeof(server_message), 0,
-            (struct sockaddr*)&client_addr, client_struct_length) == SOCKET_ERROR) {
+       if (sendto(socket_desc, server_message, sizeof(server_message), 0,
+            (struct sockaddr*)&client_addr,client_struct_length) == SOCKET_ERROR) {
             printf("Can't send: %d\n", WSAGetLastError());
             WSACleanup();
             return -1;
         }
-        printf("Response from server: %s\n",server_message);*/
+       printf("Server Response: %s\n", server_message);
     }
 
     // Close the socket:
