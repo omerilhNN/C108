@@ -127,7 +127,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="udpclient.c" />
     <ClCompile Include="udpserver.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CmakeLists.txt" />
+    <Text Include="test.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

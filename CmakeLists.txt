@@ -1,0 +1,4 @@
+cmake_minimum_required (VERSION 2.6)
+project (C108)
+add_executable(server udpserver.c)
+add_executable(client udpclient.c)

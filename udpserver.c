@@ -6,15 +6,14 @@
 
 #define MAX_CLIENT 5 
 
-int main() {
+void udpserver() {
     WSADATA wsa_data;
     SOCKET socket_desc;
     struct sockaddr_in server_addr, client_addr;
-    char server_message[2000], client_message[2000];
+    char client_message[2000];
+    char* server_message = "Hello from server\n";
     int client_struct_length = sizeof(client_addr);
-    struct hostent hostp;
 
-    // Initialize Winsock:
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
         printf("WSAStartup failed: %d\n", WSAGetLastError());
         return -1;
@@ -29,27 +28,22 @@ int main() {
     }
     printf("Socket created successfully\n");
 
-    // Set port and IP:
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(23);
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);// herhangi bir yerel IP üzerinden gelen baðlantýyý kabul eder-host to network long  
 
     
-    // Bind to the set port and IP:
+    //Bind - server deðerleri
     if (bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
         printf("Couldn't bind to the port: %d\n", WSAGetLastError());
         WSACleanup();
         return -1;
     }
-    printf("Done with binding\n");
-
-    printf("Listening for incoming messages...\n\n");
+    printf("Bind Success\n");
 
     while (1) {
         int recv_size = recvfrom(socket_desc, client_message, sizeof(client_message), 0,
             (struct sockaddr*)&client_addr, &client_struct_length);
-
-
         if (recv_size == SOCKET_ERROR) {
             printf("Couldn't receive: %d\n", WSAGetLastError());
             WSACleanup();
@@ -62,20 +56,19 @@ int main() {
             
         }
      
-        printf("Received a message from IP: %s and client port: %i\n",
-            inet_ntop(AF_INET, &client_addr.sin_addr, server_message, sizeof(server_message)), ntohs(client_addr.sin_port));
+        char client_ip[INET_ADDRSTRLEN]; // IP adresini tutmak için yeni bir karakter dizisi oluþtur
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN); //network to presentation - client_ip buffer'ýna IP'yi stringe çevirip ata
+        printf("Received a message from IP: %s and client port: %i\n", client_ip, ntohs(client_addr.sin_port));
         
-
         printf("Msg from client: %.*s\n", recv_size, client_message);//client message'ýn okunan byte kadarýný yazdýr 
 
-        printf("Server response sent to client\n");
-
-        if (sendto(socket_desc, server_message, sizeof(server_message), 0,
+     /*   if (sendto(socket_desc, server_message, sizeof(server_message), 0,
             (struct sockaddr*)&client_addr, client_struct_length) == SOCKET_ERROR) {
             printf("Can't send: %d\n", WSAGetLastError());
             WSACleanup();
             return -1;
         }
+        printf("Response from server: %s\n",server_message);*/
     }
 
     // Close the socket:

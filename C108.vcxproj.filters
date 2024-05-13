@@ -18,5 +18,16 @@
     <ClCompile Include="udpserver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="udpclient.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="test.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="CmakeLists.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>
