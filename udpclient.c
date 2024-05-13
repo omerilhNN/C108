@@ -1,74 +1,91 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <stdio.h>
+#include <string.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define PORT 8000
-#define BUFFER_SIZE 1024
+#define SIZE 1024
 
-int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        printf("Usage: %s <server_ip> <file_path>\n", argv[0]);
-        exit(1);
-    }
+int main() {
 
-    const char* server_ip = argv[1];
-    const char* file_path = argv[2];
-
+    // Initializing Winsock
     WSADATA wsa_data;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
-        printf("WSAStartup failed: %d\n", WSAGetLastError());
-        exit(1);
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    if (iResult != 0) {
+        printf("[ERROR] WSAStartup failed: %d\n", iResult);
+        return 1;
     }
 
-    SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (sock == INVALID_SOCKET) {
-        printf("socket failed: %d\n", WSAGetLastError());
-        WSACleanup();
-        exit(1);
-    }
+    // Defining the IP and Port
+    char* ip = "192.168.1.21";
+    const int port = 23;
 
+    // Defining variables
+    SOCKET server_sockfd;
     struct sockaddr_in server_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    inet_pton(AF_INET, server_ip, &server_addr.sin_addr);
+    char* filename = "test.txt";
+    FILE* fp = fopen(filename, "r");
 
-    FILE* file = fopen(file_path, "rb");
-    if (!file) {
-        printf("Error opening file: %d\n", GetLastError());
-        closesocket(sock);
+    // Creating a UDP socket
+    server_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (server_sockfd == INVALID_SOCKET) {
+        printf("[ERROR] socket error: %d\n", WSAGetLastError());
         WSACleanup();
-        exit(1);
+        return 1;
     }
 
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    rewind(file);
+    // Setting up the server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
 
-    char buffer[BUFFER_SIZE];
-    int bytes_sent;
-    int total_bytes_sent = 0;
+    if (inet_pton(AF_INET, ip, &server_addr.sin_addr) < 0)
+    {
+        printf("Invalid IP\n");
+        closesocket(server_sockfd);
+        return 1;
+    }
+    // Reading the text file
+    if (fp == NULL) {
+        printf("[ERROR] reading the file: %d\n", GetLastError());
+        closesocket(server_sockfd);
+        WSACleanup();
+        return 1;
+    }
 
-    while (total_bytes_sent < file_size) {
-        int bytes_to_read = BUFFER_SIZE < file_size - total_bytes_sent ? BUFFER_SIZE : file_size - total_bytes_sent;
-        size_t bytes_read = fread(buffer, 1, bytes_to_read, file);
+    // Sending the file data to the server
+    char buffer[SIZE];
+    int n;
+    while (fgets(buffer, SIZE, fp) != NULL) {
+        printf("[SENDING] Data: %s", buffer);
 
-        if (sendto(sock, buffer, bytes_read, 0, (SOCKADDR*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
-            printf("sendto failed: %d\n", WSAGetLastError());
-            break;
+        n = sendto(server_sockfd, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+        if (n == SOCKET_ERROR) {
+            printf("[ERROR] sending data to the server: %d\n", WSAGetLastError());
+            fclose(fp);
+            closesocket(server_sockfd);
+            WSACleanup();
+            return 1;
         }
-
-        total_bytes_sent += bytes_read;
+        memset(buffer, 0, SIZE);
     }
 
-    printf("File sent successfully. Total bytes sent: %ld\n", total_bytes_sent);
+    // Sending the 'END'
+    strcpy_s(buffer, SIZE, "END");
+    n = sendto(server_sockfd, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    if (n == SOCKET_ERROR) {
+        printf("[ERROR] sending data to the server: %d\n", WSAGetLastError());
+        fclose(fp);
+        closesocket(server_sockfd);
+        WSACleanup();
+        return 1;
+    }
 
-    fclose(file);
-    closesocket(sock);
+    printf("[SUCCESS] Data transfer complete.\n");
+    printf("[CLOSING] Disconnecting from the server.\n");
+
+    fclose(fp);
+    closesocket(server_sockfd);
     WSACleanup();
 
     return 0;
