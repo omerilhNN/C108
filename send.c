@@ -13,10 +13,13 @@ int main() {
     char buffer[SIZE];
     char path[64];
     char command[32];
+    int bytes_recv;
+    char recvBuf[SIZE];
 
     int wsa = WSAStartup(MAKEWORD(2, 2), &wsa_data);
     if (wsa != 0) {
         printf("[ERROR] WSAStartup failed: %d\n", wsa);
+        WSACleanup();
         return 1;
     }
     SOCKET server_sockfd;
@@ -25,10 +28,10 @@ int main() {
     printf("command IP path\n");
     scanf_s("%s %s %s", command,32, ip,16, path,64);
    
-    if (strcmp(command,"send") == 0 && ip != '\0' && path != '\0') {
+    if (strcmp(command,"send") == 0 && ip != '\0' && path != NULL) {
         server_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-        FILE* file = fopen(path,"r");
+        FILE* sendFile = fopen(path,"r");
 
         if (server_sockfd == INVALID_SOCKET) {
             printf("[ERROR] socket error: %d\n", WSAGetLastError());
@@ -38,16 +41,24 @@ int main() {
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(PORT);
 
+        //presentation to network - string verilen arrayi network 
         if (inet_pton(AF_INET, ip, &server_addr.sin_addr) < 0)
         {
             printf("Invalid IP\n");
             closesocket(server_sockfd);
             return 1;
         }
+        if (bind(server_sockfd,(struct sockaddr*)&server_addr,sizeof(server_addr)) == SOCKET_ERROR) {
+            printf("Bind error\n");
+            closesocket(server_sockfd);
+            return 1;
+        }
+
+
+
         int bytes_sent;
-        while (fgets(buffer, SIZE, file) != NULL) {
-            /*bytes_sent = fgets(buffer, SIZE, file)) > 0*/
-            printf("\nSending Data: %s", buffer);
+        while (fgets(buffer, SIZE, sendFile) != NULL) {
+            printf("Sending Data: %s\N", buffer);
 
             //server_socketi aracýlýðýyla - server addresine buffer'ý gönder
             bytes_sent = sendto(server_sockfd, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
@@ -58,7 +69,23 @@ int main() {
                 return 1;
             }
             printf("\nData sent: %d bytes", bytes_sent);
-            printf("Disconnecting from the server.\n\n");
+
+            bytes_recv = recvfrom(server_sockfd,recvBuf,bytes_sent,0,NULL,NULL);
+            if (bytes_recv < 0) {
+                printf("RECV Error\n");
+                closesocket(server_sockfd);
+                return 1;
+
+            }
+            FILE* recvFile = fopen("recv.txt", "a");
+            if (recvFile == NULL) {
+                printf("Failed to create file\n");
+                return 1;
+            }
+            recvBuf[bytes_recv] = '\0';
+
+            fwrite(recvBuf, 1, (size_t)strlen(recvBuf), recvFile);
+           
 
             //her buffer'da SIZE kadar elemaný sýfýrla
             memset(buffer, 0, SIZE);
