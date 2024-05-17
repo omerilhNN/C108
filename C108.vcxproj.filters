@@ -18,7 +18,10 @@
     <ClCompile Include="udpserver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="udpclient.c">
+    <ClCompile Include="sender.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="send.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

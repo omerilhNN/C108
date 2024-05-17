@@ -8,7 +8,7 @@
 
 
 
-int main() {
+int udpserver() {
     WSADATA wsa_data;
     SOCKET socket_desc;
     struct sockaddr_in server_addr, client_addr;

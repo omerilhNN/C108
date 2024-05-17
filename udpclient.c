@@ -8,7 +8,8 @@
 #define SIZE 1024
 #define PORT 23
 
-int main() {
+
+int udpclient() {
     WSADATA wsa_data;
     int wsa = WSAStartup(MAKEWORD(2, 2), &wsa_data);
     if (wsa != 0) {
@@ -47,7 +48,7 @@ int main() {
 
     char buffer[SIZE];
     int bytes_sent;
-    while (bytes_sent = fgets(buffer, SIZE, fp) > 0 ) {
+    while (fgets(buffer, SIZE, fp) != NULL ) {
         printf("Sending Data: %s", buffer);
 
         //server_socketi aracýlýðýyla - server addresine buffer'ý gönder

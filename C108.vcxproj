@@ -127,7 +127,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="udpclient.c" />
+    <ClCompile Include="send.c" />
+    <ClCompile Include="sender.c" />
     <ClCompile Include="udpserver.c" />
   </ItemGroup>
   <ItemGroup>
